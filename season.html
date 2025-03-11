@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Three.js - Texture Mapping</title>
+<style>
+img{display:none;}
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: -applesystem, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+html,
+body {
+height: 100%;
+width: 100%;
+}
+#threejs-container, canvas {
+width: 96vw;
+height: 54vw;
+}
+  @media only screen and (min-device-width: 768px){
+    #threejs-container{
+width: 100vh;
+height: 100vh;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="threejs-container"></div>
+
+<video autoplay controls></video>
+
+<script type="importmap">
+{"imports":{
+"three":"https://threejs.org/build/three.module.js",
+"three/addons/":"https://threejs.org/examples/jsm/"}}
+</script>
+<script type="module">
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+import * as THREE from 'three';
+import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
+
+//const gui=new GUI();
+let width = 1280
+let height = 720
+// scene
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x111)
+
+
+// lights
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+scene.add(ambientLight)
+const light = new THREE.DirectionalLight(0xffffff,1)
+light.position.set(10, 10, 0)
+light.castShadow = true
+light.shadow.mapSize.width = 512
+light.shadow.mapSize.height = 512
+light.shadow.camera.near = 0.5
+light.shadow.camera.far = 1000
+scene.add(light)
+
+// renderer - anti-aliasing
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.physicallyCorrectLights = true
+renderer.setSize(width, height)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+// camera
+const camera = new THREE.PerspectiveCamera(45, width / height, 0.01, 1000)
+camera.position.set(0,200,400)
+
+
+const controls= new OrbitControls(camera, renderer.domElement)
+controls.autoRotate=true
+controls.autoRotateSpeed=5
+//controls.enableRotate = false
+
+
+// textures
+var images=document.querySelectorAll("img");
+const loader = new THREE.TextureLoader()
+
+const texture = loader.load('earthmap.jpg')
+// plane
+const planeGeometry = new THREE.PlaneGeometry(500, 500,5,5)
+const plane = new THREE.Mesh(
+planeGeometry,
+new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, wireframe: true })
+)
+plane.rotateX(-Math.PI / 2)
+plane.position.y = -25
+plane.receiveShadow = true
+scene.add(plane)
+// object
+
+const halo = new THREE.SphereGeometry(30, 360, 60)
+const glow = new THREE.MeshLambertMaterial({
+color:"Yellow",
+emissive:0xffad00
+})
+const sun = new THREE.Mesh(halo, glow)
+sun.position.set(0,0, 0)
+sun.castShadow = true
+sun.receiveShadow = true
+scene.add(sun)
+
+const earthGroup = new THREE.Group();
+earthGroup.rotation.z=Math.PI/180*-23.4;
+scene.add(earthGroup);
+
+const geometry = new THREE.SphereGeometry(10, 360, 60)
+const material1 = new THREE.MeshStandardMaterial({
+//wireframe:true,
+map: texture,
+side: THREE.DoubleSide
+})
+const object1 = new THREE.Mesh(geometry, material1)
+object1.position.set(0,0, 0)
+
+var ang=0;
+function pos(ang){
+earthGroup.position.set(200*Math.sin(Math.PI/180*ang),0,200*Math.cos(Math.PI/180*ang))}
+earthGroup.castShadow = true
+earthGroup.receiveShadow = true
+earthGroup.add(object1)
+
+
+// responsiveness
+window.addEventListener('resize', () => {
+camera.aspect = width / height
+camera.updateProjectionMatrix()
+renderer.setSize(width, height)
+renderer.render(scene, camera)
+})
+
+// animation
+function animate() {
+requestAnimationFrame(animate)
+renderer.render(scene, camera)
+//controls.update()
+ang+=0.6
+object1.rotation.y +=0.04
+pos(ang);
+earthGroup.add(object1)
+}
+var canvas = renderer.domElement;
+// rendering the scene
+const container = document.querySelector('#threejs-container')
+container.append(canvas)
+renderer.render(scene, camera)
+animate();
+
+var video = document.querySelector("video");
+
+var videoStream = canvas.captureStream(15);
+var mediaRecorder = new MediaRecorder(videoStream);
+
+var chunks = [];
+mediaRecorder.ondataavailable = function(e) {
+  chunks.push(e.data);
+};
+
+mediaRecorder.onstop = function(e) {
+  var blob = new Blob(chunks, { 'type' : 'video/mp4' });
+  chunks = [];
+  var videoURL = URL.createObjectURL(blob);
+  video.src = videoURL;
+};
+mediaRecorder.ondataavailable = function(e) {
+  chunks.push(e.data);
+};
+
+mediaRecorder.start();
+setTimeout(function (){ mediaRecorder.stop(); }, 30000);
+</script>
+</body>
+</html>
