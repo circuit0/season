@@ -24,7 +24,7 @@ width: 96vw;
 height: 54vw;
 }
   @media only screen and (min-device-width: 768px){
-    #threejs-container{
+    #threejs-container, canvas{
 width: 100vh;
 height: 100vh;
     }
@@ -159,7 +159,7 @@ animate();
 
 var video = document.querySelector("video");
 
-var videoStream = canvas.captureStream(30);
+var videoStream = canvas.captureStream(60);
 var mediaRecorder = new MediaRecorder(videoStream);
 
 var chunks = [];
